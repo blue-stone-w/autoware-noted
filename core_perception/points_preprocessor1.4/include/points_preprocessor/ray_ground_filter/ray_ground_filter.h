@@ -43,7 +43,7 @@
 
 #include <opencv2/core/version.hpp>
 #if (CV_MAJOR_VERSION == 3)
-#include "gencolors.cpp"
+#include "gencolors.cpp" // 这个文件可以理解为一个给点云上色的程序。对地面提取没有实际意义。
 #else
 #include <opencv2/contrib/contrib.hpp>
 #endif
@@ -64,40 +64,40 @@ private:
   std::string input_point_topic_;
   std::string base_frame_;
 
-  double general_max_slope_;            // degrees
-  double local_max_slope_;              // degrees
-  double radial_divider_angle_;         // distance in rads between dividers
-  double concentric_divider_distance_;  // distance in meters between concentric divisions
-  double min_height_threshold_;         // minimum height threshold regardless the slope, useful for close points
-  double clipping_height_;              // the points higher than this will be removed from the input cloud.
-  double min_point_distance_;           // minimum distance from the origin to consider a point as valid
-  double reclass_distance_threshold_;   // distance between points at which re classification will occur
+  double general_max_slope_;           // degrees: judge height
+  double local_max_slope_;             // degrees: judge height difference between two points
+  double radial_divider_angle_;        // distance in rads between dividers
+  double concentric_divider_distance_; // distance in meters between concentric divisions
+  double min_height_threshold_;        // minimum height threshold regardless the slope, useful for close points
+  double clipping_height_;             // the points higher than this will be removed from the input cloud.
+  double min_point_distance_;          // minimum distance from the origin to consider a point as valid
+  double reclass_distance_threshold_;  // distance between points at which re classification will occur
 
   size_t radial_dividers_num_;
   size_t concentric_dividers_num_;
 
   std::vector<cv::Scalar> colors_;
-  const size_t color_num_ = 60;  // different number of color to generate
+  const size_t color_num_ = 60; // different number of color to generate
 
   struct PointXYZIRTColor
   {
     pcl::PointXYZI point;
 
-    float radius;  // cylindric coords on XY Plane
-    float theta;   // angle deg on XY plane
+    float radius; // cylindric coords on XY Plane
+    float theta;  // angle deg on XY plane
 
-    size_t radial_div;      // (theta)index of the radial divsion to which this point belongs to
-    size_t concentric_div;  // (radius)index of the concentric division to which this points belongs to
+    size_t radial_div;     // (theta)index of the radial divsion to which this point belongs to
+    size_t concentric_div; // (radius)index of the concentric division to which this points belongs to
 
-    size_t red;    // Red component  [0-255]
-    size_t green;  // Green Component[0-255]
-    size_t blue;   // Blue component [0-255]
+    size_t red;   // Red component  [0-255]
+    size_t green; // Green Component[0-255]
+    size_t blue;  // Blue component [0-255]
 
-    size_t original_index;  // index of this point in the source pointcloud
+    size_t original_index; // index of this point in the source pointcloud
   };
   typedef std::vector<PointXYZIRTColor> PointCloudXYZIRTColor;
 
-  void update_config_params(const autoware_config_msgs::ConfigRayGroundFilter::ConstPtr& param);
+  void update_config_params(const autoware_config_msgs::ConfigRayGroundFilter::ConstPtr &param);
 
   /*!
    * Output transformed PointCloud from in_cloud_ptr->header.frame_id to in_target_frame
@@ -107,12 +107,12 @@ private:
    * @retval true transform successed
    * @retval false transform faild
    */
-  bool TransformPointCloud(const std::string& in_target_frame, const sensor_msgs::PointCloud2::ConstPtr& in_cloud_ptr,
-                           const sensor_msgs::PointCloud2::Ptr& out_cloud_ptr);
+  bool TransformPointCloud(const std::string &in_target_frame, const sensor_msgs::PointCloud2::ConstPtr &in_cloud_ptr,
+                           const sensor_msgs::PointCloud2::Ptr &out_cloud_ptr);
 
-  void publish_cloud(const ros::Publisher& in_publisher,
+  void publish_cloud(const ros::Publisher &in_publisher,
                      const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_to_publish_ptr,
-                     const std_msgs::Header& in_header);
+                     const std_msgs::Header &in_header);
 
   /*!
    * calculate index of radial & concentric, theta
@@ -122,9 +122,9 @@ private:
    * @param[out] out_radial_ordered_clouds Vector of Points Clouds, each element will contain the points ordered
    */
   void ConvertXYZIToRTZColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud,
-                             const std::shared_ptr<PointCloudXYZIRTColor>& out_organized_points,
-                             const std::shared_ptr<std::vector<pcl::PointIndices> >& out_radial_divided_indices,
-                             const std::shared_ptr<std::vector<PointCloudXYZIRTColor> >& out_radial_ordered_clouds);
+                             const std::shared_ptr<PointCloudXYZIRTColor> &out_organized_points,
+                             const std::shared_ptr<std::vector<pcl::PointIndices>> &out_radial_divided_indices,
+                             const std::shared_ptr<std::vector<PointCloudXYZIRTColor>> &out_radial_ordered_clouds);
 
   /*!
    * Classifies Points in the PointCoud as Ground and Not Ground
@@ -132,9 +132,9 @@ private:
    * @param out_ground_indices Returns the indices of the points classified as ground in the original PointCloud
    * @param out_no_ground_indices Returns the indices of the points classified as not ground in the original PointCloud
    */
-  void ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor>& in_radial_ordered_clouds,
-                          const pcl::PointIndices::Ptr& out_ground_indices,
-                          const pcl::PointIndices::Ptr& out_no_ground_indices);
+  void ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor> &in_radial_ordered_clouds,
+                          const pcl::PointIndices::Ptr &out_ground_indices,
+                          const pcl::PointIndices::Ptr &out_no_ground_indices);
 
   /*!
    * Removes the points higher than a threshold
@@ -154,7 +154,7 @@ private:
    * @param out_removed_indices_cloud_ptr Resulting PointCloud with the indices removed
    */
   void ExtractPointsIndices(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                            const pcl::PointIndices& in_indices,
+                            const pcl::PointIndices &in_indices,
                             pcl::PointCloud<pcl::PointXYZI>::Ptr out_only_indices_cloud_ptr,
                             pcl::PointCloud<pcl::PointXYZI>::Ptr out_removed_indices_cloud_ptr);
 
@@ -167,7 +167,7 @@ private:
   void RemovePointsUpTo(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_min_distance,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr out_filtered_cloud_ptr);
 
-  void CloudCallback(const sensor_msgs::PointCloud2ConstPtr& in_sensor_cloud);
+  void CloudCallback(const sensor_msgs::PointCloud2ConstPtr &in_sensor_cloud);
 
   friend class RayGroundFilter_clipCloud_Test;
 
@@ -176,4 +176,4 @@ public:
   void Run();
 };
 
-#endif  // POINTS_PREPROCESSOR_RAY_GROUND_FILTER_RAY_GROUND_FILTER_H
+#endif // POINTS_PREPROCESSOR_RAY_GROUND_FILTER_RAY_GROUND_FILTER_H

@@ -1,17 +1,5 @@
 /*
  * Copyright 2017-2019 Autoware Foundation. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  ********************
  *  v1.0: amc-nu (abrahammonrroy@yahoo.com)
  */
@@ -40,7 +28,7 @@
 
 #include "points_preprocessor/ray_ground_filter/ray_ground_filter.h"
 
-void RayGroundFilter::update_config_params(const autoware_config_msgs::ConfigRayGroundFilter::ConstPtr& param)
+void RayGroundFilter::update_config_params(const autoware_config_msgs::ConfigRayGroundFilter::ConstPtr &param)
 {
   general_max_slope_ = param->general_max_slope;
   local_max_slope_ = param->local_max_slope;
@@ -52,9 +40,9 @@ void RayGroundFilter::update_config_params(const autoware_config_msgs::ConfigRay
   reclass_distance_threshold_ = param->reclass_distance_threshold;
 }
 
-bool RayGroundFilter::TransformPointCloud(const std::string& in_target_frame,
-                                          const sensor_msgs::PointCloud2::ConstPtr& in_cloud_ptr,
-                                          const sensor_msgs::PointCloud2::Ptr& out_cloud_ptr)
+bool RayGroundFilter::TransformPointCloud(const std::string &in_target_frame,
+                                          const sensor_msgs::PointCloud2::ConstPtr &in_cloud_ptr,
+                                          const sensor_msgs::PointCloud2::Ptr &out_cloud_ptr)
 {
   if (in_target_frame == in_cloud_ptr->header.frame_id)
   {
@@ -68,7 +56,7 @@ bool RayGroundFilter::TransformPointCloud(const std::string& in_target_frame,
     transform_stamped = tf_buffer_.lookupTransform(in_target_frame, in_cloud_ptr->header.frame_id,
                                                    in_cloud_ptr->header.stamp, ros::Duration(1.0));
   }
-  catch (tf2::TransformException& ex)
+  catch (tf2::TransformException &ex)
   {
     ROS_WARN("%s", ex.what());
     return false;
@@ -80,9 +68,9 @@ bool RayGroundFilter::TransformPointCloud(const std::string& in_target_frame,
   return true;
 }
 
-void RayGroundFilter::publish_cloud(const ros::Publisher& in_publisher,
+void RayGroundFilter::publish_cloud(const ros::Publisher &in_publisher,
                                     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_to_publish_ptr,
-                                    const std_msgs::Header& in_header)
+                                    const std_msgs::Header &in_header)
 {
   sensor_msgs::PointCloud2::Ptr cloud_msg_ptr(new sensor_msgs::PointCloud2);
   sensor_msgs::PointCloud2::Ptr trans_cloud_msg_ptr(new sensor_msgs::PointCloud2);
@@ -108,9 +96,9 @@ void RayGroundFilter::publish_cloud(const ros::Publisher& in_publisher,
  */
 void RayGroundFilter::ConvertXYZIToRTZColor(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud,
-    const std::shared_ptr<PointCloudXYZIRTColor>& out_organized_points,
-    const std::shared_ptr<std::vector<pcl::PointIndices> >& out_radial_divided_indices,
-    const std::shared_ptr<std::vector<PointCloudXYZIRTColor> >& out_radial_ordered_clouds)
+    const std::shared_ptr<PointCloudXYZIRTColor> &out_organized_points,
+    const std::shared_ptr<std::vector<pcl::PointIndices>> &out_radial_divided_indices,
+    const std::shared_ptr<std::vector<PointCloudXYZIRTColor>> &out_radial_ordered_clouds)
 {
   out_organized_points->resize(in_cloud->points.size());
   out_radial_divided_indices->clear();
@@ -152,14 +140,15 @@ void RayGroundFilter::ConvertXYZIToRTZColor(
     out_radial_divided_indices->at(radial_div).indices.push_back(i);
 
     out_radial_ordered_clouds->at(radial_div).push_back(new_point);
-  }  // end for: devide all points into 
+  } // end for: devide all points into
 
 // order radial points on each division
 #pragma omp for
   for (size_t i = 0; i < radial_dividers_num_; i++)
   {
     std::sort(out_radial_ordered_clouds->at(i).begin(), out_radial_ordered_clouds->at(i).end(),
-              [](const PointXYZIRTColor& a, const PointXYZIRTColor& b) { return a.radius < b.radius; });  // NOLINT
+              [](const PointXYZIRTColor &a, const PointXYZIRTColor &b)
+              { return a.radius < b.radius; }); // NOLINT
   }
 }
 
@@ -169,20 +158,20 @@ void RayGroundFilter::ConvertXYZIToRTZColor(
  * @param out_ground_indices Returns the indices of the points classified as ground in the original PointCloud
  * @param out_no_ground_indices Returns the indices of the points classified as not ground in the original PointCloud
  */
-void RayGroundFilter::ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor>& in_radial_ordered_clouds,
-                                         const pcl::PointIndices::Ptr& out_ground_indices,
-                                         const pcl::PointIndices::Ptr& out_no_ground_indices)
+void RayGroundFilter::ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor> &in_radial_ordered_clouds,
+                                         const pcl::PointIndices::Ptr &out_ground_indices,
+                                         const pcl::PointIndices::Ptr &out_no_ground_indices)
 {
   out_ground_indices->indices.clear();
   out_no_ground_indices->indices.clear();
 #pragma omp for
-  for (size_t i = 0; i < in_radial_ordered_clouds.size(); i++)  // sweep through each radial division
+  for (size_t i = 0; i < in_radial_ordered_clouds.size(); i++) // sweep through each radial division
   {
     float prev_radius = 0.f;
     float prev_height = 0.f;
     bool prev_ground = false;
     bool current_ground = false;
-    for (size_t j = 0; j < in_radial_ordered_clouds[i].size(); j++)  // loop through each point in the radial div
+    for (size_t j = 0; j < in_radial_ordered_clouds[i].size(); j++) // loop through each point in the radial div
     {
       float points_distance = in_radial_ordered_clouds[i][j].radius - prev_radius;
       float height_threshold = tan(DEG2RAD(local_max_slope_)) * points_distance;
@@ -215,7 +204,7 @@ void RayGroundFilter::ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor
           current_ground = true;
         }
       }
-      else
+      else // height difference is large
       {
         // check if current point is too far from previous one, if so classify again
         if (points_distance > reclass_distance_threshold_ &&
@@ -243,7 +232,7 @@ void RayGroundFilter::ClassifyPointCloud(const std::vector<PointCloudXYZIRTColor
       prev_radius = in_radial_ordered_clouds[i][j].radius;
       prev_height = in_radial_ordered_clouds[i][j].point.z;
     } // endfor: have processed all points in this radial division
-  } // endfor: have processed all radial divisions
+  }   // endfor: have processed all radial divisions
 }
 
 /*!
@@ -268,7 +257,7 @@ void RayGroundFilter::ClipCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cl
     }
   }
   extractor.setIndices(boost::make_shared<pcl::PointIndices>(indices));
-  extractor.setNegative(true);  // true removes the indices, false leaves only the indices
+  extractor.setNegative(true); // true removes the indices, false leaves only the indices
   extractor.filter(*out_clipped_cloud_ptr);
 }
 
@@ -281,7 +270,7 @@ void RayGroundFilter::ClipCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cl
  * @param out_removed_indices_cloud_ptr Resulting PointCloud with the indices removed
  */
 void RayGroundFilter::ExtractPointsIndices(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                                           const pcl::PointIndices& in_indices,
+                                           const pcl::PointIndices &in_indices,
                                            pcl::PointCloud<pcl::PointXYZI>::Ptr out_only_indices_cloud_ptr,
                                            pcl::PointCloud<pcl::PointXYZI>::Ptr out_removed_indices_cloud_ptr)
 {
@@ -289,10 +278,10 @@ void RayGroundFilter::ExtractPointsIndices(const pcl::PointCloud<pcl::PointXYZI>
   extract_ground.setInputCloud(in_cloud_ptr);
   extract_ground.setIndices(boost::make_shared<pcl::PointIndices>(in_indices));
 
-  extract_ground.setNegative(false);  // true removes the indices, false leaves only the indices
+  extract_ground.setNegative(false); // true removes the indices, false leaves only the indices
   extract_ground.filter(*out_only_indices_cloud_ptr);
 
-  extract_ground.setNegative(true);  // true removes the indices, false leaves only the indices
+  extract_ground.setNegative(true); // true removes the indices, false leaves only the indices
   extract_ground.filter(*out_removed_indices_cloud_ptr);
 }
 
@@ -319,11 +308,11 @@ void RayGroundFilter::RemovePointsUpTo(const pcl::PointCloud<pcl::PointXYZI>::Pt
     }
   }
   extractor.setIndices(boost::make_shared<pcl::PointIndices>(indices));
-  extractor.setNegative(true);  // true removes the indices, false leaves only the indices
+  extractor.setNegative(true); // true removes the indices, false leaves only the indices
   extractor.filter(*out_filtered_cloud_ptr);
 }
 
-void RayGroundFilter::CloudCallback(const sensor_msgs::PointCloud2ConstPtr& in_sensor_cloud)
+void RayGroundFilter::CloudCallback(const sensor_msgs::PointCloud2ConstPtr &in_sensor_cloud)
 {
   health_checker_ptr_->NODE_ACTIVATE();
   health_checker_ptr_->CHECK_RATE("topic_rate_points_raw_slow", 8, 5, 1, "topic points_raw subscribe rate slow.");
@@ -354,8 +343,8 @@ void RayGroundFilter::CloudCallback(const sensor_msgs::PointCloud2ConstPtr& in_s
   // GetCloudNormals(current_sensor_cloud_ptr, cloud_with_normals_ptr, 5.0);
 
   std::shared_ptr<PointCloudXYZIRTColor> organized_points(new PointCloudXYZIRTColor);
-  std::shared_ptr<std::vector<pcl::PointIndices> > radial_division_indices(new std::vector<pcl::PointIndices>);
-  std::shared_ptr<std::vector<PointCloudXYZIRTColor> > radial_ordered_clouds(new std::vector<PointCloudXYZIRTColor>);
+  std::shared_ptr<std::vector<pcl::PointIndices>> radial_division_indices(new std::vector<pcl::PointIndices>);
+  std::shared_ptr<std::vector<PointCloudXYZIRTColor>> radial_ordered_clouds(new std::vector<PointCloudXYZIRTColor>);
 
   radial_dividers_num_ = ceil(360 / radial_divider_angle_);
 
@@ -404,17 +393,17 @@ void RayGroundFilter::Run()
   node_handle_.param("local_max_slope", local_max_slope_, 5.0);
   ROS_INFO("local_max_slope[deg]: %f", local_max_slope_);
 
-  node_handle_.param("radial_divider_angle", radial_divider_angle_, 0.1);  // 1 degree default
+  node_handle_.param("radial_divider_angle", radial_divider_angle_, 0.1); // 1 degree default
   ROS_INFO("radial_divider_angle[deg]: %f", radial_divider_angle_);
-  node_handle_.param("concentric_divider_distance", concentric_divider_distance_, 0.0);  // 0.0 meters default
+  node_handle_.param("concentric_divider_distance", concentric_divider_distance_, 0.0); // 0.0 meters default
   ROS_INFO("concentric_divider_distance[meters]: %f", concentric_divider_distance_);
-  node_handle_.param("min_height_threshold", min_height_threshold_, 0.05);  // 0.05 meters default
+  node_handle_.param("min_height_threshold", min_height_threshold_, 0.05); // 0.05 meters default
   ROS_INFO("min_height_threshold[meters]: %f", min_height_threshold_);
-  node_handle_.param("clipping_height", clipping_height_, 2.0);  // 2.0 meters default above the car
+  node_handle_.param("clipping_height", clipping_height_, 2.0); // 2.0 meters default above the car
   ROS_INFO("clipping_height[meters]: %f", clipping_height_);
-  node_handle_.param("min_point_distance", min_point_distance_, 1.85);  // 1.85 meters default
+  node_handle_.param("min_point_distance", min_point_distance_, 1.85); // 1.85 meters default
   ROS_INFO("min_point_distance[meters]: %f", min_point_distance_);
-  node_handle_.param("reclass_distance_threshold", reclass_distance_threshold_, 0.2);  // 0.5 meters default
+  node_handle_.param("reclass_distance_threshold", reclass_distance_threshold_, 0.2); // 0.5 meters default
   ROS_INFO("reclass_distance_threshold[meters]: %f", reclass_distance_threshold_);
 
 #if (CV_MAJOR_VERSION == 3)

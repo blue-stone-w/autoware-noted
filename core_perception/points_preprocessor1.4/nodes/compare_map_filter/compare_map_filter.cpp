@@ -1,33 +1,7 @@
 /*
  *  Copyright (c) 2018, TierIV, Inc
  *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *
- *  * Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- *  * Neither the name of Autoware nor the names of its
- *    contributors may be used to endorse or promote products derived from
- *    this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- *  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- *  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- *  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 
 // match current cloud with map and devide points in current cloud into matched and unmatched
 
@@ -60,36 +34,30 @@ private:
   ros::Publisher match_points_pub_;
   ros::Publisher unmatch_points_pub_;
 
-  tf::TransformListener* tf_listener_;
+  tf::TransformListener *tf_listener_;
 
   pcl::KdTreeFLANN<pcl::PointXYZI> tree_; // store map points
 
-  double distance_threshold_; // to decide whether a point in current cloud is matched a point in map 
+  double distance_threshold_; // to decide whether a point in current cloud is matched a point in map
   double min_clipping_height_;
   double max_clipping_height_;
 
   std::string map_frame_;
 
-  // subscribe configure 
-  void configCallback(const autoware_config_msgs::ConfigCompareMapFilter::ConstPtr& config_msg_ptr);
+  // subscribe configure
+  void configCallback(const autoware_config_msgs::ConfigCompareMapFilter::ConstPtr &config_msg_ptr);
   // callback function to recieve and store point map
-  void pointsMapCallback(const sensor_msgs::PointCloud2::ConstPtr& map_cloud_msg_ptr);
-  // 
-  void sensorPointsCallback(const sensor_msgs::PointCloud2::ConstPtr& sensorTF_cloud_msg_ptr);
+  void pointsMapCallback(const sensor_msgs::PointCloud2::ConstPtr &map_cloud_msg_ptr);
+  //
+  void sensorPointsCallback(const sensor_msgs::PointCloud2::ConstPtr &sensorTF_cloud_msg_ptr);
   // devide points in current cloud in matched and unmatched
   void searchMatchingCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, // input original cloud
-                           pcl::PointCloud<pcl::PointXYZI>::Ptr match_cloud_ptr, // output cloud where points are matched with map points
+                           pcl::PointCloud<pcl::PointXYZI>::Ptr match_cloud_ptr,    // output cloud where points are matched with map points
                            pcl::PointCloud<pcl::PointXYZI>::Ptr unmatch_cloud_ptr); // output
 };
 
 CompareMapFilter::CompareMapFilter()
-  : nh_()
-  , nh_private_("~")
-  , tf_listener_(new tf::TransformListener)
-  , distance_threshold_(0.3)
-  , min_clipping_height_(-2.0)
-  , max_clipping_height_(0.5)
-  , map_frame_("/map")
+    : nh_(), nh_private_("~"), tf_listener_(new tf::TransformListener), distance_threshold_(0.3), min_clipping_height_(-2.0), max_clipping_height_(0.5), map_frame_("/map")
 {
   nh_private_.param("distance_threshold", distance_threshold_, distance_threshold_);
   nh_private_.param("min_clipping_height", min_clipping_height_, min_clipping_height_);
@@ -102,14 +70,14 @@ CompareMapFilter::CompareMapFilter()
   unmatch_points_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/points_no_ground", 10);
 }
 
-void CompareMapFilter::configCallback(const autoware_config_msgs::ConfigCompareMapFilter::ConstPtr& config_msg_ptr)
+void CompareMapFilter::configCallback(const autoware_config_msgs::ConfigCompareMapFilter::ConstPtr &config_msg_ptr)
 {
   distance_threshold_ = config_msg_ptr->distance_threshold;
   min_clipping_height_ = config_msg_ptr->min_clipping_height;
   max_clipping_height_ = config_msg_ptr->max_clipping_height;
 }
 
-void CompareMapFilter::pointsMapCallback(const sensor_msgs::PointCloud2::ConstPtr& map_cloud_msg_ptr)
+void CompareMapFilter::pointsMapCallback(const sensor_msgs::PointCloud2::ConstPtr &map_cloud_msg_ptr)
 {
   pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);
   pcl::fromROSMsg(*map_cloud_msg_ptr, *map_cloud_ptr);
@@ -118,7 +86,7 @@ void CompareMapFilter::pointsMapCallback(const sensor_msgs::PointCloud2::ConstPt
   map_frame_ = map_cloud_msg_ptr->header.frame_id;
 }
 
-void CompareMapFilter::sensorPointsCallback(const sensor_msgs::PointCloud2::ConstPtr& sensorTF_cloud_msg_ptr)
+void CompareMapFilter::sensorPointsCallback(const sensor_msgs::PointCloud2::ConstPtr &sensorTF_cloud_msg_ptr)
 {
   const ros::Time sensor_time = sensorTF_cloud_msg_ptr->header.stamp;
   const std::string sensor_frame = sensorTF_cloud_msg_ptr->header.frame_id;
@@ -145,7 +113,7 @@ void CompareMapFilter::sensorPointsCallback(const sensor_msgs::PointCloud2::Cons
     pcl_ros::transformPointCloud(map_frame_, sensor_time, *sensorTF_clipping_height_cloud_ptr, sensor_frame,
                                  *mapTF_cloud_ptr, *tf_listener_);
   }
-  catch (tf::TransformException& ex)
+  catch (tf::TransformException &ex)
   {
     ROS_ERROR("Transform error: %s", ex.what());
     return;
@@ -167,7 +135,7 @@ void CompareMapFilter::sensorPointsCallback(const sensor_msgs::PointCloud2::Cons
   {
     pcl_ros::transformPointCloud(sensor_frame, mapTF_match_cloud_msg, sensorTF_match_cloud_msg, *tf_listener_);
   }
-  catch (tf::TransformException& ex)
+  catch (tf::TransformException &ex)
   {
     ROS_ERROR("Transform error: %s", ex.what());
     return;
@@ -186,7 +154,7 @@ void CompareMapFilter::sensorPointsCallback(const sensor_msgs::PointCloud2::Cons
   {
     pcl_ros::transformPointCloud(sensor_frame, mapTF_unmatch_cloud_msg, sensorTF_unmatch_cloud_msg, *tf_listener_);
   }
-  catch (tf::TransformException& ex)
+  catch (tf::TransformException &ex)
   {
     ROS_ERROR("Transform error: %s", ex.what());
     return;
@@ -223,7 +191,7 @@ void CompareMapFilter::searchMatchingCloud(const pcl::PointCloud<pcl::PointXYZI>
   }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   ros::init(argc, argv, "compare_map_filter");
   CompareMapFilter node;
