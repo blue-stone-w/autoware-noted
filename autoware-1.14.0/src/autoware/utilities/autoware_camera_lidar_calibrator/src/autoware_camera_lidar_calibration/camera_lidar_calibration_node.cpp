@@ -59,8 +59,8 @@ class ROSCameraLidarApp
   cv::Mat lidar_camera_rotation_matrix_;
   cv::Mat lidar_camera_translation_vector_;
 
-  std::vector<cv::Point2f> clicked_image_points_;
-  std::vector<cv::Point3f> clicked_velodyne_points_;
+  std::vector<cv::Point2f> clicked_image_points_;    // we can select points by click from GUI
+  std::vector<cv::Point3f> clicked_velodyne_points_; //
 
   bool is_rotation_matrix(const cv::Mat &in_matrix)
   {
@@ -149,10 +149,10 @@ class ROSCameraLidarApp
 
       cv::solvePnP(clicked_velodyne_points_,
                    clicked_image_points_,
-                   camera_instrinsics_,
-                   distortion_coefficients_,
-                   rotation_vector,
-                   translation_vector,
+                   camera_instrinsics_,      // input intrinsic
+                   distortion_coefficients_, // input
+                   rotation_vector,          // output
+                   translation_vector,       // output
                    true,
                    CV_EPNP);
 

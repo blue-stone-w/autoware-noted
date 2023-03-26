@@ -63,7 +63,7 @@ void tfRegistration(const cv::Mat &camExtMat, const ros::Time &timeStamp)
   quaternion.setRPY(roll, pitch, yaw);
 
   transform.setOrigin(
-    tf::Vector3(camExtMat.at<double>(0, 3), camExtMat.at<double>(1, 3), camExtMat.at<double>(2, 3)));
+      tf::Vector3(camExtMat.at<double>(0, 3), camExtMat.at<double>(1, 3), camExtMat.at<double>(2, 3)));
 
   transform.setRotation(quaternion);
 
@@ -108,7 +108,8 @@ void cameraInfo_sender(const cv::Mat &camMat, const cv::Mat &distCoeff, const cv
         if (col == 3)
         {
           camera_info_msg_.P[row * 4 + col] = 0.0f;
-        } else
+        }
+        else
         {
           camera_info_msg_.P[row * 4 + col] = camMat.at<double>(row, col);
         }
@@ -130,7 +131,6 @@ void cameraInfo_sender(const cv::Mat &camMat, const cv::Mat &distCoeff, const cv
   }
   camera_info_msg_.header.stamp = timeStamp;
   camera_info_msg_.header.frame_id = camera_frame_;
-
 
   camera_info_pub.publish(camera_info_msg_);
 }
@@ -181,7 +181,6 @@ int main(int argc, char *argv[])
   {
     isPublish_cameraInfo = true; /* doesn't publish camera_info in default */
   }
-
 
   private_nh.param<std::string>("camera_frame", camera_frame_, "camera");
   ROS_INFO("[%s] camera_frame: '%s'", __APP_NAME__, camera_frame_.c_str());
