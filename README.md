@@ -1,9 +1,11 @@
 # autoware-noted
 ### introduction
 1. This is autoware code with more Chinese and English notation. <br>
-2. I just downloaded whole workspace(src) and just add some Chinese and English notation. No change to code. Besides, the format is changed.
+2. I just downloaded whole workspace(src) and just add some Chinese and English notation. No changes to code. Besides, the format is changed.
 3. autoware12和14似乎不支持Ubuntu20.04
 4. 从Ubuntu20.04起，autoware只有ros2的版本
+5. 使用ros1的autoware.ai已经很久没维护了
+6. Autoware版本的一些[说明](https://blog.csdn.net/qq_27493341/article/details/106646054)
 
 ### changed files
 虽然没有更改代码的任何功能，但autoware中的相关附属文件可能被改变了。
